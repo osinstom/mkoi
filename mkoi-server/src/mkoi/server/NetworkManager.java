@@ -18,9 +18,12 @@ import client.encryption.ParamService;
 public class NetworkManager {
 
 	private ServerSocket srvSocket;
+	private String authKey = "mkoi_16L";
 
 	public NetworkManager() throws IOException {
 		srvSocket = new ServerSocket(5555);
+		System.out.println("Server has been started on port 5555..");
+		System.out.println("Authentication key: " + authKey);
 	}
 
 	public void listen() throws IOException, ClassNotFoundException {
@@ -33,10 +36,10 @@ public class NetworkManager {
 						ObjectInputStream inStream = new ObjectInputStream(socket.getInputStream());
 						MessageObject mo = (MessageObject) inStream.readObject();
 
-						System.out.println("######## PROXY #######");
+						System.out.println("\n######## PROXY #######");
 						mo.getMessageParts().forEach(messagePart -> System.out.println(messagePart.toString()));
 						
-						ParamService pService = new ParamService("secretKey");
+						ParamService pService = new ParamService(authKey);
 						MessageObjectService mos = new MessageObjectService(pService);
 
 //						System.out.println("########################################");

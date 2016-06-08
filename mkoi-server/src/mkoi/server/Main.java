@@ -9,7 +9,6 @@ public class Main {
 		NetworkManager netMgr = null;
 		try {
 			netMgr = new NetworkManager();
-			System.out.println("Server running");
 		} catch (IOException e) {
 			System.out.println("NET MGR not started");
 		}
