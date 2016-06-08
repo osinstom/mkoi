@@ -7,6 +7,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.math.BigDecimal;
 import java.net.UnknownHostException;
 import java.util.Scanner;
 import java.util.regex.Pattern;
@@ -194,10 +195,14 @@ public class MainActivity extends JFrame {
 				String ipAddr = tfIpAddr.getText().trim();
 				Integer dataLen = Integer.parseInt(tfLength.getText().trim());
 				boolean isTransformationOn = chckbxTransf.isSelected();
-				String[] ratio = tfRatio.getText().trim().split("/");
+				String[] ratioStr = tfRatio.getText().trim().split("/");
 
-				int goodNb = Integer.parseInt(ratio[0].trim());
-				int badNb = Integer.parseInt(ratio[1].trim());
+				BigDecimal goodNb = BigDecimal.valueOf(Integer.parseInt(ratioStr[0].trim()));
+				BigDecimal badNb = BigDecimal.valueOf(Integer.parseInt(ratioStr[1].trim()));
+				if (BigDecimal.ZERO.equals(badNb)) {
+					badNb = BigDecimal.ONE;
+				}
+				BigDecimal res = goodNb.divide(badNb, 0, BigDecimal.ROUND_CEILING);
 
 				byte[] fileBytes = new byte[0];
 				try {
@@ -205,11 +210,11 @@ public class MainActivity extends JFrame {
 				} catch (UnsupportedEncodingException e1) {
 					e1.printStackTrace();
 				}
-
+				int ratio = BigDecimal.valueOf(fileBytes.length).divide(res, 0, BigDecimal.ROUND_CEILING).intValue();
 				// winnowing and chaffing
 
 				ParamService pService = new ParamService("secretKey", dataLen,
-						badNb);
+						ratio);
 				MessageObjectService moService = new MessageObjectService(
 						pService);
 				MessageObject mo = moService.createMessageObject(fileBytes,

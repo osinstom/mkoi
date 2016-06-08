@@ -85,14 +85,15 @@ public class MessageObjectService {
 			} else {
 				array = Arrays.copyOfRange(msgBytes, i, i + partSize - 1);
 			}
-			int seq = sequenceNumber++;
-			msgPart.setSequenceNumber(seq);
+			msgPart.setSequenceNumber(sequenceNumber++);
 			msgPart.setMsg(array);
 			msgPart.setChaff(false);
 			list.add(msgPart);
-			for (int j = 0; j < ratio; j++) {
-				list.add(RandomUtils.nextInt(0, list.size()), createChaffMsg(seq, partSize));
-			}
+		}
+		//Chaff the message
+		for (int i = 0; i < ratio; i++) {
+			int seq = RandomUtils.nextInt(1, sequenceNumber);
+			list.add(RandomUtils.nextInt(0, list.size()), createChaffMsg(seq, partSize));
 		}
 		return list;
 	}
@@ -154,6 +155,7 @@ public class MessageObjectService {
 			MessagePart tmp = new MessagePart();
 			int seq = messagePart.getSequenceNumber();
 			tmp.setSequenceNumber(seq);
+			tmp.setChaff(false);
 			byte[] bytes = mac.doFinal(getIntBytes(seq));
 			tmp.setMsg(xorByteArrays(messagePart.getMsg(), bytes));
 			authenticateMsg(tmp);

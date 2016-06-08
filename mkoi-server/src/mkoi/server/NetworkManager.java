@@ -51,8 +51,8 @@ public class NetworkManager {
 //							}
 //						});
 						byte[] fileBytes = mos.getFileBytes(mo);
-						String winnowed = new String(fileBytes);
-
+						String winnowed = new String(fileBytes, "UTF-8");
+//						System.out.println(winnowed);
 						writeToFile(winnowed);
 
 					} finally {
