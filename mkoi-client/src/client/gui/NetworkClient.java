@@ -1,24 +1,26 @@
 package client.gui;
 
-import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.net.UnknownHostException;
 
+import client.encryption.MessageObject;
+
 public class NetworkClient {
 
-	public void send(String serverAddr, String message)
+	public void send(String serverAddr, MessageObject obj)
 			throws UnknownHostException, IOException {
 		Socket socket = new Socket(serverAddr, 5555);
 
-		DataOutputStream os = new DataOutputStream(socket.getOutputStream());
+		ObjectOutputStream outputStream = new ObjectOutputStream(socket.getOutputStream());
 
 		try {
-			os.writeUTF(message);
+			outputStream.writeObject(obj);
 		} catch (IOException e) {
 			throw e;
 		} finally {
-			os.close();
+			outputStream.close();
 			socket.close();
 		}
 

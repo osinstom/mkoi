@@ -20,6 +20,8 @@ public class Main {
 		} catch (IOException e) {
 			System.out.println("Error while receivng message");
 			System.out.println(e.getMessage());
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
 		}
 
 	}

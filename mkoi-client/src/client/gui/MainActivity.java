@@ -26,6 +26,10 @@ import javax.swing.JTextField;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 
+import client.encryption.MessageObject;
+import client.encryption.MessageObjectService;
+import client.encryption.ParamService;
+
 public class MainActivity extends JFrame {
 	
 	private static final Pattern IP_ADDR_PATTERN = Pattern.compile(
@@ -282,14 +286,18 @@ public class MainActivity extends JFrame {
 				int goodNb = Integer.parseInt(ratio[0].trim());
 				int badNb = Integer.parseInt(ratio[1].trim());
 				
+				byte[] fileBytes = textData.getBytes();
+				
 				// winnowing and chaffing
 				
-				String encrypted = WinAndChaff.encrypt(textData, dataLen, goodNb, badNb, isTransformationOn);
+				ParamService pService = new ParamService("secretKey", dataLen, goodNb);
+				MessageObjectService moService = new MessageObjectService(pService);
+				MessageObject mo = moService.createMessageObject(fileBytes, isTransformationOn);
 				
 				// sending file
 				
 				try {
-					ntwClient.send(ipAddr, encrypted);
+					ntwClient.send(ipAddr, mo);
 				} catch (UnknownHostException e1) {
 					JOptionPane.showMessageDialog(window, "Error: " + e1.getMessage());
 				} catch (IOException e1) {

@@ -6,8 +6,14 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.ObjectInputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+
+import client.encryption.MessageObject;
+import client.encryption.MessageObjectService;
+import client.encryption.MessagePart;
+import client.encryption.ParamService;
 
 public class NetworkManager {
 
@@ -17,31 +23,27 @@ public class NetworkManager {
 		srvSocket = new ServerSocket(5555);
 	}
 
-	public void listen() throws IOException {
+	public void listen() throws IOException, ClassNotFoundException {
 		try {
 			while (true) {
 				Socket socket = srvSocket.accept();
 
 				if (socket != null) {
 					try {
-						BufferedReader input = new BufferedReader(
-								new InputStreamReader(socket.getInputStream()));
-						StringBuilder message = new StringBuilder();
-						while (true) {
-							String line = input.readLine();
-							if (line == null)
-								break;
-
-							message.append(line + "\n");
-						}
+						ObjectInputStream inStream = new ObjectInputStream(socket.getInputStream());
+						MessageObject mo = (MessageObject) inStream.readObject();
 
 						System.out.println("######## PROXY #######");
-						System.out.println(message.toString());
+						for(MessagePart mPart : mo.getMessageParts()) {
+							System.out.println(mPart.toString());
+						}
+						
+						ParamService pService = new ParamService("secretKey");
+						MessageObjectService mos = new MessageObjectService(pService);
+						byte[] fileBytes = mos.getFileBytes(mo);
+						String winnowed = new String(fileBytes);
 
-						String decrypted = WinAndChaffDecryptor.decrypt(message
-								.toString());
-
-						writeToFile(decrypted);
+						writeToFile(winnowed);
 
 					} finally {
 						socket.close();
