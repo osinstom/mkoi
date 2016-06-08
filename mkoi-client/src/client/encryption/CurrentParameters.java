@@ -27,10 +27,9 @@ public class CurrentParameters {
 
 	private CurrentParameters() {
 		//defaultowe wartości coby nullami nie waliło po ryju
-		setSha256_HMAC("defaultSecretKey");
-		setPartSize(1000);
-		setRatio(10);
-
+//		setSha256_HMAC("defaultSecretKey");
+//		setPartSize(1000);
+//		setRatio(10);
 	}
 
 	public Mac getSha256_HMAC() {

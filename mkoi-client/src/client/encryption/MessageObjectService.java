@@ -75,6 +75,7 @@ public class MessageObjectService {
 		int arrayLength = msgBytes.length;
 		int sequenceNumber = 1;
 		List<MessagePart> list = new ArrayList<>((int) arrayLength / partSize);
+
 		for (int i = 0; i < arrayLength; i += partSize) {
 			MessagePart msgPart = new MessagePart();
 			byte[] array;
@@ -90,8 +91,7 @@ public class MessageObjectService {
 			msgPart.setChaff(false);
 			list.add(msgPart);
 			for (int j = 0; j < ratio; j++) {
-				createChaffMsg(seq, partSize);
-				list.add(msgPart);
+				list.add(RandomUtils.nextInt(0, list.size()), createChaffMsg(seq, partSize));
 			}
 		}
 		return list;

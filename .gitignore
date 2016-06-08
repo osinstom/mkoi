@@ -1,0 +1,8 @@
+.gradle
+build/
+.idea
+*.iml
+pom.xml
+config_local.groovy
+intime-app/src/main/webapp/VAADIN/themes/intimeapptheme/styles.css
+*.class

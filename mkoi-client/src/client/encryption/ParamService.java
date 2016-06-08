@@ -15,8 +15,7 @@ public class ParamService {
 
 	public ParamService(String secretKey, int partSize, int ratio) {
 		CurrentParameters.getInstance().setSha256_HMAC(secretKey);
-		CurrentParameters.getInstance().setRatio(10);
-		CurrentParameters.getInstance().setPartSize(1000);
+		setPartSizeAndRation(partSize, ratio);
 	}
 
 	public void initMacFunction(String secretKey) {

@@ -93,8 +93,7 @@ public class MessageObjectService {
 			msgPart.setChaff(false);
 			list.add(msgPart);
 			for (int j = 0; j < ratio; j++) {
-				createChaffMsg(seq, partSize);
-				list.add(msgPart);
+				list.add(createChaffMsg(seq, partSize));
 			}
 		}
 		return list;

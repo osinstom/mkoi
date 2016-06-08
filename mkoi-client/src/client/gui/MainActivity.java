@@ -15,7 +15,9 @@ import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.UnknownHostException;
+import java.nio.charset.Charset;
 import java.util.Scanner;
 import java.util.regex.Pattern;
 
@@ -25,6 +27,8 @@ import javax.swing.JOptionPane;
 import javax.swing.JTextField;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
+
+import org.apache.commons.codec.Charsets;
 
 import client.encryption.MessageObject;
 import client.encryption.MessageObjectService;
@@ -285,12 +289,17 @@ public class MainActivity extends JFrame {
 				
 				int goodNb = Integer.parseInt(ratio[0].trim());
 				int badNb = Integer.parseInt(ratio[1].trim());
-				
-				byte[] fileBytes = textData.getBytes();
-				
+
+				byte[] fileBytes = new byte[0];
+				try {
+					fileBytes = textData.getBytes("UTF-8");
+				} catch (UnsupportedEncodingException e1) {
+					e1.printStackTrace();
+				}
+
 				// winnowing and chaffing
 				
-				ParamService pService = new ParamService("secretKey", dataLen, goodNb);
+				ParamService pService = new ParamService("secretKey", dataLen, badNb);
 				MessageObjectService moService = new MessageObjectService(pService);
 				MessageObject mo = moService.createMessageObject(fileBytes, isTransformationOn);
 				

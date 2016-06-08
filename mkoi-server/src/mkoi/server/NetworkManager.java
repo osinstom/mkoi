@@ -34,12 +34,19 @@ public class NetworkManager {
 						MessageObject mo = (MessageObject) inStream.readObject();
 
 						System.out.println("######## PROXY #######");
-						for(MessagePart mPart : mo.getMessageParts()) {
-							System.out.println(mPart.toString());
-						}
+						mo.getMessageParts().forEach(messagePart -> System.out.println(messagePart.toString()));
 						
 						ParamService pService = new ParamService("secretKey");
 						MessageObjectService mos = new MessageObjectService(pService);
+
+//						System.out.println("########################################");
+//						System.out.println("#####ODSIANE I GOTOWE##################");
+//
+//						mo.getMessageParts().forEach(messagePart -> {
+//							if (!messagePart.isChaff()) {
+//								System.out.println(messagePart.toString());
+//							}
+//						});
 						byte[] fileBytes = mos.getFileBytes(mo);
 						String winnowed = new String(fileBytes);
 
@@ -57,7 +64,7 @@ public class NetworkManager {
 	}
 
 	private void writeToFile(String decrypted) {
-		File file = new File("RECEIVED/received.txt");
+		File file = new File("/RECEIVED/received.txt");
 		BufferedWriter writer = null;
 		try {
 			writer = new BufferedWriter(new FileWriter(file));
