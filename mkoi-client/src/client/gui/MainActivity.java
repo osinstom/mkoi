@@ -213,7 +213,9 @@ public class MainActivity extends JFrame {
 				int ratio = BigDecimal.valueOf(fileBytes.length).divide(res, 0, BigDecimal.ROUND_CEILING).intValue();
 				// winnowing and chaffing
 
-				ParamService pService = new ParamService(tfKey.getText().trim(), dataLen,
+//				ParamService pService = new ParamService(tfKey.getText().trim(), dataLen,
+//						ratio);
+				ParamService pService = new ParamService("mkoi_16L", dataLen,
 						ratio);
 				MessageObjectService moService = new MessageObjectService(
 						pService);

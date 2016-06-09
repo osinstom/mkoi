@@ -22,9 +22,6 @@ public class MessageObjectService {
 	public MessageObjectService(ParamService pService) {
 		this.paramService = pService;
 	}
-	
-	public MessageObjectService() {
-	}
 
 	/**
 	 * Tworzy i zwraca MessageObject do przesłania. Przed wywołaniem tej metody warto wypełnić CurrentParameters poprzez ParamService.
@@ -33,17 +30,16 @@ public class MessageObjectService {
 	 * @return
 	 */
 	public MessageObject createMessageObject(byte[] fileBytes, boolean useTransform) {
-		MessageObject res = createMessageObject(fileBytes);
-		if (!useTransform) {
-			res.setUseTransform(false);
-			return res;
-		}
 		byte[] keyBytes = RandomUtils.nextBytes(128);
-		List<MessagePart> tmp = produceTransformedMessages(res.getMessageParts(), keyBytes);
-		res.setMessageParts(tmp);
-		byte[] bigM = produceBigMForTransform(res.getMessageParts(), keyBytes);
-		res.setBigM(bigM);
-		res.setUseTransform(true);
+		MessageObject res = innerCreateMessageObject(fileBytes, useTransform, keyBytes);
+//		if (!useTransform) {
+//			res.setUseTransform(false);
+//			return res;
+//		}
+//		byte[] keyBytes = RandomUtils.nextBytes(128);
+//		List<MessagePart> tmp = produceTransformedMessages(res.getMessageParts(), keyBytes);
+//		res.setMessageParts(tmp);
+
 		return res;
 	}
 
@@ -64,17 +60,24 @@ public class MessageObjectService {
 		return res;
 	}
 
-	private MessageObject createMessageObject(byte[] fileBytes) {
+	private MessageObject innerCreateMessageObject(byte[] fileBytes, boolean useTransform, byte[] keyBytes) {
 		MessageObject res = new MessageObject();
 		List<MessagePart> list = createMessageParts(fileBytes
 				, paramService.getPartSize()
-				, paramService.getRatio());
+				, paramService.getRatio()
+				, useTransform
+				, keyBytes);
 		list.forEach(messagePart -> authenticateMsg(messagePart));
 		res.setMessageParts(list);
+		if (useTransform) {
+			byte[] bigM = produceBigMForTransform(res.getMessageParts(), keyBytes);
+			res.setBigM(bigM);
+			res.setUseTransform(true);
+		}
 		return res;
 	}
 
-	private List<MessagePart> createMessageParts(byte[] msgBytes, int partSize, int ratio) {
+	private List<MessagePart> createMessageParts(byte[] msgBytes, int partSize, int ratio, boolean useTransform, byte[] keyBytes) {
 		int arrayLength = msgBytes.length;
 		int sequenceNumber = 1;
 		List<MessagePart> list = new ArrayList<>((int) arrayLength / partSize);
@@ -87,14 +90,21 @@ public class MessageObjectService {
 			} else {
 				array = Arrays.copyOfRange(msgBytes, i, i + partSize - 1);
 			}
-			int seq = sequenceNumber++;
-			msgPart.setSequenceNumber(seq);
+			msgPart.setSequenceNumber(sequenceNumber++);
 			msgPart.setMsg(array);
 			msgPart.setChaff(false);
-			list.add(msgPart);
-			for (int j = 0; j < ratio; j++) {
-				list.add(createChaffMsg(seq, partSize));
+
+			if (useTransform) {
+				Mac mac = paramService.initMacWithKey(keyBytes);
+				byte[] bytes = mac.doFinal(getIntBytes(msgPart.getSequenceNumber()));
+				msgPart.setMsg(xorByteArrays(msgPart.getMsg(), bytes.clone()));
 			}
+			list.add(msgPart);
+		}
+		//Chaff the message
+		for (int i = 0; i < ratio; i++) {
+			int seq = RandomUtils.nextInt(1, sequenceNumber);
+			list.add(RandomUtils.nextInt(0, list.size()), createChaffMsg(seq, partSize));
 		}
 		return list;
 	}
@@ -132,7 +142,7 @@ public class MessageObjectService {
 		if (msgPart.isChaff()) {
 			return; // jeśli CHAFF to nie ma co oznaczać.
 		}
-		byte[] tmp = msgPart.getMsg();
+		byte[] tmp = msgPart.getMsg().clone();
 		byte[] mac = computeHMAC(tmp);
 		msgPart.setMac(mac);
 	}
@@ -149,20 +159,12 @@ public class MessageObjectService {
 		return computed.equalsIgnoreCase(received);
 	}
 
-	private List<MessagePart> produceTransformedMessages(List<MessagePart> messageParts, byte[] keyBytes) {
-		Mac mac = paramService.initMacWithKey(keyBytes);
-		List<MessagePart> res = new ArrayList<>(messageParts.size());
-		messageParts.forEach(messagePart -> {
-			MessagePart tmp = new MessagePart();
-			int seq = messagePart.getSequenceNumber();
-			tmp.setSequenceNumber(seq);
-			byte[] bytes = mac.doFinal(getIntBytes(seq));
-			tmp.setMsg(xorByteArrays(messagePart.getMsg(), bytes));
-			authenticateMsg(tmp);
-			res.add(tmp);
-		});
-		return res;
-	}
+//	private MessagePart produceTransformedMessages(MessagePart messagePart, byte[] keyBytes) {
+//		Mac mac = paramService.initMacWithKey(keyBytes);
+//		byte[] bytes = mac.doFinal(getIntBytes(messagePart.getSequenceNumber()));
+//		messagePart.setMsg(xorByteArrays(messagePart.getMsg(), bytes));
+//		return messagePart;
+//	}
 
 	/**
 	 * Metoda odwracająca transformatę all-or-nothing.
@@ -172,10 +174,13 @@ public class MessageObjectService {
 		byte[] tempKey = msgObject.getBigM();
 		List<MessagePart> transformedMsgs = msgObject.getMessageParts();
 		for (MessagePart msg : transformedMsgs) { //wyliczenie klucza transformacji
+			if (msg.isChaff()) {
+				continue;
+			}
 			tempKey = xorByteArrays(tempKey, paramService.getMacFunction().doFinal(xorByteArrays(msg.getMsg()
 					, getIntBytes(msg.getSequenceNumber()))));
 		}
-		List<byte[]> res = new ArrayList<>(transformedMsgs.size());
+		//List<byte[]> res = new ArrayList<>(transformedMsgs.size());
 		Mac mac = paramService.initMacWithKey(tempKey);
 		transformedMsgs.forEach(messagePart -> {
 			byte[] tmp = xorByteArrays(messagePart.getMsg()
@@ -187,6 +192,9 @@ public class MessageObjectService {
 	private byte[] produceBigMForTransform(List<MessagePart> messageParts, byte[] keyBytes) {
 		byte[] res = keyBytes;
 		for (MessagePart messagePart : messageParts) {
+			if (messagePart.isChaff()) {
+				continue;
+			}
 			byte[] tmp = paramService.getMacFunction().doFinal(xorByteArrays(messagePart.getMsg()
 					, getIntBytes(messagePart.getSequenceNumber())));
 			res = xorByteArrays(res, tmp);
@@ -194,23 +202,35 @@ public class MessageObjectService {
 		return res;
 	}
 
-	private byte[] xorByteArrays(byte[] a, byte[] b) {
-		int greaterLength = a.length >= b.length ? a.length : b.length;
-		if (a.length > b.length) {
-			byte[] tmp = new byte[a.length];
-			System.arraycopy(b, 0, tmp, a.length - b.length, b.length);
-			b = tmp;
-		} else if (b.length > a.length) {
-			byte[] tmp = new byte[b.length];
-			System.arraycopy(a, 0, tmp, b.length - a.length, a.length);
-			a = tmp;
+//	private byte[] xorByteArrays(byte[] a, byte[] b) {
+//		int greaterLength = a.length >= b.length ? a.length : b.length;
+//		if (a.length > b.length) {
+//			byte[] tmp = new byte[a.length];
+//			System.arraycopy(b, 0, tmp, a.length - b.length, b.length);
+//			b = tmp;
+//		} else if (b.length > a.length) {
+//			byte[] tmp = new byte[b.length];
+//			System.arraycopy(a, 0, tmp, b.length - a.length, a.length);
+//			a = tmp;
+//		}
+//		byte[] res =  new byte[greaterLength];
+//		int i = 0;
+//		for (byte x : a) {
+//			res[i] = (byte) (x ^ b[i++]);
+//		}
+//		return res;
+//	}
+
+	public static byte[] xorByteArrays(byte[] data1, byte[] data2) {
+		if (data1.length > data2.length) {
+			byte[] tmp = data2;
+			data2 = data1;
+			data1 = tmp;
 		}
-		byte[] res =  new byte[greaterLength];
-		int i = 0;
-		for (byte x : a) {
-			res[i] = (byte) (x ^ b[i++]);
+		for (int i = 0; i < data1.length; i++) {
+			data2[i] ^= data1[i];
 		}
-		return res;
+		return data2;
 	}
 
 	private byte[] getIntBytes(int i) {
