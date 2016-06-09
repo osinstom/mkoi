@@ -67,7 +67,7 @@ public class NetworkManager {
 	}
 
 	private void writeToFile(String decrypted) {
-		File file = new File("/RECEIVED/received.txt");
+		File file = new File("received.txt");
 		BufferedWriter writer = null;
 		try {
 			writer = new BufferedWriter(new FileWriter(file));
