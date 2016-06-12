@@ -69,6 +69,7 @@ public class MessageObjectService {
 				, keyBytes);
 		list.forEach(messagePart -> authenticateMsg(messagePart));
 		res.setMessageParts(list);
+		res.setUseTransform(false);
 		if (useTransform) {
 			byte[] bigM = produceBigMForTransform(res.getMessageParts(), keyBytes);
 			res.setBigM(bigM);
@@ -135,6 +136,7 @@ public class MessageObjectService {
 		msgParts.sort((o1, o2) -> Integer.compare(o1.getSequenceNumber(), o2.getSequenceNumber()));
 		MessageObject winnowedMsgObject = new MessageObject();
 		winnowedMsgObject.setMessageParts(msgParts);
+		winnowedMsgObject.setUseTransform(messageObject.isUseTransform());
 		return winnowedMsgObject;
 	}
 

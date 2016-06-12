@@ -68,12 +68,12 @@ public class MessageObjectService {
 				, keyBytes);
 		list.forEach(messagePart -> authenticateMsg(messagePart));
 		res.setMessageParts(list);
+		res.setUseTransform(false);
 		if (useTransform) {
 			byte[] bigM = produceBigMForTransform(res.getMessageParts(), keyBytes);
 			res.setBigM(bigM);
 			res.setUseTransform(true);
 		}
-		res.setUseTransform(false);
 		return res;
 	}
 
@@ -97,7 +97,9 @@ public class MessageObjectService {
 
 			if (useTransform) {
 				byte[] bytes = mac.doFinal(getIntBytes(msgPart.getSequenceNumber()));
-				msgPart.setMsg(xorByteArrays(msgPart.getMsg(), bytes.clone()));
+				byte[] tmp = bytes.clone();
+				msgPart.setMsg(xorByteArrays(msgPart.getMsg(), tmp));
+				msgPart.transformed = true;
 			}
 			list.add(msgPart);
 		}
@@ -135,6 +137,7 @@ public class MessageObjectService {
 		msgParts.sort((o1, o2) -> Integer.compare(o1.getSequenceNumber(), o2.getSequenceNumber()));
 		MessageObject winnowedMsgObject = new MessageObject();
 		winnowedMsgObject.setMessageParts(msgParts);
+		winnowedMsgObject.setUseTransform(messageObject.isUseTransform());
 		return winnowedMsgObject;
 	}
 
@@ -145,6 +148,7 @@ public class MessageObjectService {
 		byte[] tmp = msgPart.getMsg().clone();
 		byte[] mac = computeHMAC(tmp);
 		msgPart.setMac(mac);
+		msgPart.setChaff(false);
 	}
 
 	private byte[] computeHMAC(byte[] arg) {

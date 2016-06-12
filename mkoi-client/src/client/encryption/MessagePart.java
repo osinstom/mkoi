@@ -55,6 +55,8 @@ public class MessagePart implements Serializable {
 	public void setChaff(boolean chaff) {
 		isChaff = chaff;
 	}
+
+	public transient boolean transformed = false;
 	
 	@Override
 	public String toString() {
